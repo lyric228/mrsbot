@@ -4,7 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.97"
+azalea = { git = "https://github.com/azalea-rs/azalea", version = "0.11.0" }
+sysx = { git = "https://github.com/lyric228/sysx" }
 
+[dependencies.parking_lot]
+version = "0.12.3"
+features = ["deadlock_detection", "nightly"]
+
+[dependencies.tokio]
+version = "1.44.1"
+features = ["full"]
 
 [profile.dev]
 opt-level = 1
