@@ -1,0 +1,16 @@
+[server]
+host = "localhost"
+port = 1488
+
+[proxy]
+host = "45.140.143.77"
+port = 18080
+
+[delay]
+discord = 300
+global = 300
+invite = 300
+
+[bot]
+nickname = "dayn"
+password = "dayn"

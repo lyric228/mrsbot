@@ -1,16 +1,19 @@
 [package]
 name = "mrsbot"
-version = "0.1.0"
+version = "0.1.3"
 edition = "2024"
 
 [dependencies]
+toml = "0.8.20"
 anyhow = "1.0.97"
-azalea = { git = "https://github.com/azalea-rs/azalea", version = "0.11.0" }
+regex = "1.11.1"
 sysx = { git = "https://github.com/lyric228/sysx" }
+azalea = { git = "https://github.com/azalea-rs/azalea" }
+azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion" }
 
-[dependencies.parking_lot]
-version = "0.12.3"
-features = ["deadlock_detection", "nightly"]
+[dependencies.serde]
+version = "1.0.219"
+features = ["derive"]
 
 [dependencies.tokio]
 version = "1.44.1"
