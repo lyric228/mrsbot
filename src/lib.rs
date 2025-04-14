@@ -1,16 +1,14 @@
-pub mod chat {
-    pub mod clan {
-
+pub mod handlers {
+    pub mod chat {
+        pub mod cc;
+        pub mod gc;
+        pub mod lc;
+        pub mod pm;
     }
-    pub mod global {
-
-    }
-    pub mod local {
-
-    }
+    pub mod spawn;
+    pub mod time;
 }
-
-pub mod handler;
-pub mod types;
 pub mod cfg;
+pub mod handler;
 pub mod re;
+pub mod types;

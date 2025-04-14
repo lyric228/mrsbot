@@ -15,6 +15,7 @@ pub struct Config {
 pub struct BotConfig {
     pub nickname: Option<String>,
     pub password: Option<String>,
+    pub version: Option<String>, 
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -31,6 +32,19 @@ pub struct ServerConfig {
 
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct DelayConfig {
+    pub min: Option<MinDelayConfig>,
+    pub max: Option<MaxDelayConfig>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct MinDelayConfig {
+    pub discord: Option<i32>,
+    pub global: Option<i32>,
+    pub invite: Option<i32>,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct MaxDelayConfig {
     pub discord: Option<i32>,
     pub global: Option<i32>,
     pub invite: Option<i32>,
@@ -75,6 +89,7 @@ impl Mergeable<BotConfig> for BotConfig {
         BotConfig {
             nickname: self.nickname.or(base.nickname),
             password: self.password.or(base.password),
+            version: self.version.or(base.version), 
         }
     }
 }
@@ -100,12 +115,32 @@ impl Mergeable<ServerConfig> for ServerConfig {
 impl Mergeable<DelayConfig> for DelayConfig {
     fn merge_from(self, base: DelayConfig) -> Self {
         DelayConfig {
+            min: merge_option_structs(base.min, self.min),
+            max: merge_option_structs(base.max, self.max),
+        }
+    }
+}
+
+impl Mergeable<MinDelayConfig> for MinDelayConfig {
+    fn merge_from(self, base: MinDelayConfig) -> Self {
+        MinDelayConfig {
             discord: self.discord.or(base.discord),
             global: self.global.or(base.global),
             invite: self.invite.or(base.invite),
         }
     }
 }
+
+impl Mergeable<MaxDelayConfig> for MaxDelayConfig {
+    fn merge_from(self, base: MaxDelayConfig) -> Self {
+        MaxDelayConfig {
+            discord: self.discord.or(base.discord),
+            global: self.global.or(base.global),
+            invite: self.invite.or(base.invite),
+        }
+    }
+}
+
 
 impl Mergeable<Config> for Config {
     fn merge_from(self, base: Config) -> Self {

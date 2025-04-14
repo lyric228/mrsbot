@@ -8,6 +8,7 @@ use sysx::Result;
 use anyhow::anyhow;
 use sysx::net::ipv4::create_ipv4_socket;
 use azalea::protocol::connect::Proxy;
+use azalea_viaversion::ViaVersionPlugin;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,8 +42,11 @@ async fn main() -> Result<()> {
     } else {
         JoinOpts::new()
     };
+    let version = bot_config.version.unwrap_or("1.21.5".to_string());
+    let via_version_plugin = ViaVersionPlugin::start(version).await;
 
     ClientBuilder::new()
+        .add_plugins(via_version_plugin)
         .set_handler(handle)
         .start_with_opts(account, address, options)
         .await
