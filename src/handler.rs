@@ -4,14 +4,21 @@ use crate::types::State;
 pub async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()> {
     match event {
         Event::Spawn => {
-
+            bot.chat(format!("/reg {}", state.runtime_config.bot.password).as_str());
+            bot.chat(format!("/login {}", state.runtime_config.bot.password).as_str());
+            bot.chat(format!("/s{}", state.runtime_config.bot.password).as_str());
         }
+
         Event::Chat(msg) => {
-            if msg.username() == Some(bot.username()) {
-                return Ok(());
+            if msg.sender() == Some(bot.username()) {
+                // return Ok(());
             }
 
             println!("{}", msg.message().to_ansi());
+        }
+
+        Event::Disconnect(text) => {
+            
         }
 
         _ => {}
@@ -35,6 +42,12 @@ TODO --------------------------------------------------------------
 нужно написать скрипт для автоматического клонирования репозитория 
 github (через скрипт curl), установки всего нужного, удалении 
 всего не нужного и тд.
+
+use ru proxy with ru server ip
+
+x .txt 
+v .db postgresql
+
 /warp n930iqkfujo2
 TODO --------------------------------------------------------------
 */
