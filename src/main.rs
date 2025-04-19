@@ -1,54 +1,74 @@
+use mrsbot::*;
+use anyhow::{anyhow, Result};
+use cfg::load_cfg;
+use handler::handle;
+use std::env;
 use std::net::SocketAddr;
+use std::path::Path;
+use types::State;
 use azalea::prelude::*;
-use ::mrsbot::handler::handle;
-use ::mrsbot::cfg::load_cfg;
-use sysx::io::env::get_args;
 use azalea::JoinOpts;
-use sysx::Result;
-use anyhow::anyhow;
-use sysx::net::ipv4::create_ipv4_socket;
 use azalea::protocol::connect::Proxy;
 use azalea_viaversion::ViaVersionPlugin;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = get_args();
-    let path = args.get(0).ok_or_else(|| anyhow!("Не указан путь к конфигу!"))?;
+    let args: Vec<String> = env::args().collect();
 
-    let config = load_cfg(path.as_str()).map_err(|e| anyhow!("Не удалось загрузить конфиг '{}': {:?}", path, e))?;
+    if args.len() != 2 {
+        eprintln!("Usage: {} <portal_config_path>", args[0]);
+        return Err(anyhow!("Invalid arguments: expected <portal_config_path>"));
+    }
 
-    let server_config = config.server.ok_or_else(|| anyhow!("Конфигурация сервера не найдена в конфиге"))?;
-    let bot_config = config.bot.ok_or_else(|| anyhow!("Конфигурация бота не найдена в конфиге"))?;
-    let proxy_config = config.proxy;
+    let portal_path = Path::new(&args[1]);
+    let (_config, runtime_config, server_config, proxy_config) = load_cfg(portal_path)?;
 
-    let host = server_config.host.ok_or_else(|| anyhow!("Хост сервера не указан в конфиге"))?;
-    let address = match server_config.port {
-        Some(port) => format!("{}:{}", host, port),
-        None => host,
-    };
+    let host = server_config
+        .host
+        .ok_or_else(|| anyhow!("Server host is missing in config"))?;
+    let port = server_config.port.unwrap_or(25565);
+    let address = format!("{}:{}", host, port);
 
-    let nickname = bot_config.nickname.ok_or_else(|| anyhow!("Никнейм бота не указан в конфиге"))?;
-    let account = Account::offline(&nickname);
+    let account = Account::offline(&runtime_config.bot.nickname);
 
-    let options = if let Some(proxy_conf) = proxy_config {
-        if let (Some(proxy_host), Some(proxy_port)) = (proxy_conf.host, proxy_conf.port) {
-            let socket = create_ipv4_socket(&proxy_host, proxy_port)
-                .expect("Не удалось использовать прокси");
-            let proxy = Proxy::new(SocketAddr::V4(socket), None);
-            JoinOpts::new().proxy(proxy)
-        } else {
-            JoinOpts::new()
-        }
+    let options = if let (Some(proxy_host), Some(proxy_port)) =
+        (proxy_config.host.as_deref(), proxy_config.port)
+    {
+        let proxy_addr = tokio::net::lookup_host(format!("{}:{}", proxy_host, proxy_port))
+            .await?
+            .find(|addr| addr.is_ipv4())
+            .ok_or_else(|| anyhow!("Could not resolve proxy host to an IPv4 address: {}", proxy_host))?;
+
+        let proxy_socket_addr = match proxy_addr {
+             SocketAddr::V4(addr) => addr,
+             SocketAddr::V6(_) => return Err(anyhow!("IPv6 proxies are not supported yet")),
+        };
+
+        let proxy = Proxy::new(SocketAddr::V4(proxy_socket_addr), None);
+        JoinOpts::new().proxy(proxy)
     } else {
         JoinOpts::new()
     };
-    let version = bot_config.version.unwrap_or("1.21.5".to_string());
-    let via_version_plugin = ViaVersionPlugin::start(version).await;
 
-    ClientBuilder::new()
-        .add_plugins(via_version_plugin)
+    let version = server_config.version.unwrap_or_else(|| "AUTO".to_string());
+
+    // Создаем начальное состояние с runtime_config
+    let initial_state = State {
+        runtime_config
+    };
+    let mut client_builder = ClientBuilder::new();
+
+    if version != "AUTO" {
+        let via_version_plugin = ViaVersionPlugin::start(version).await;
+        client_builder = client_builder.add_plugins(via_version_plugin);
+    }
+
+    // Теперь `handle` должен соответствовать типу State
+    // Сигнатура handle: async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()>
+    client_builder
         .set_handler(handle)
+        .set_state(initial_state) // Передаем handle напрямую
         .start_with_opts(account, address, options)
         .await
-        .map_err(|e| anyhow!("Ошибка при запуске клиента: {:?}", e))?;
+        .map_err(|e| anyhow!("Error starting or running client: {:?}", e))?
 }

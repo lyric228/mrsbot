@@ -1,0 +1,23 @@
+[server]
+host = "ru.masedworld.net"
+port = 1488
+version = "1.19.4"
+warp = "siski"
+
+[proxy]
+host = "45.140.143.77"
+port = 18080
+
+[delay.min]
+discord = 300
+global = 150
+invite = 10
+
+[delay.max]
+discord = 600
+global = 250
+invite = 30
+
+[bot]
+nickname = "Kemper1ng"
+password = "comunist#T0P*%:"
