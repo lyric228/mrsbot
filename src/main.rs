@@ -27,14 +27,14 @@ async fn main() -> Result<()> {
         .host
         .ok_or_else(|| anyhow!("Server host is missing in config"))?;
     let port = server_config.port.unwrap_or(25565);
-    let address = format!("{}:{}", host, port);
+    let address = format!("{host}:{port}");
 
     let account = Account::offline(&runtime_config.bot.nickname);
 
     let options = if let (Some(proxy_host), Some(proxy_port)) =
         (proxy_config.host.as_deref(), proxy_config.port)
     {
-        let proxy_addr = tokio::net::lookup_host(format!("{}:{}", proxy_host, proxy_port))
+        let proxy_addr = tokio::net::lookup_host(format!("{proxy_host}:{proxy_port}"))
             .await?
             .find(|addr| addr.is_ipv4())
             .ok_or_else(|| anyhow!("Could not resolve proxy host to an IPv4 address: {}", proxy_host))?;

@@ -34,13 +34,6 @@ pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Resu
             log!(INFO, "[{}] Disconnected: {}", state.config.bot.portal, text);
         }
 
-        Event::Packet(packet) => match packet {
-            // Тут можно обрабатывать любые события и пакеты
-            // mb *packet
-
-            _ => {}
-        }
-
         _ => {}
     }
 
@@ -48,6 +41,10 @@ pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Resu
 }
 /* 
 TODO --------------------------------------------------------------
+Event::Packet(packet) => {}
+many triggers!
+
+
 Сделать функцию (или что то подобное) чтобы превращать сообщение
 в структуру, которая будет содержать информацию о том,
 что именно было написано в сообщении, нике, типе сообщения, и тд.
