@@ -1,44 +1,77 @@
 use crate::types::*;
-use azalea::prelude::*;
+use azalea::{prelude::*, protocol::packets::game::ServerboundGamePacket};
 use sysx::io::log::*;
+use azalea::protocol::packets::game::ClientboundGamePacket;
+use azalea::chat::ChatPacket;
 use crate::consts::*;
 
 pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Result<()> {
+    let nickname = state.config.bot.nickname.clone();
+    let password = state.config.bot.password.clone();
+    let portal = state.config.bot.portal.clone();
+    let warp = state.config.bot.warp.clone();
+    let delay = state.config.delay.clone();
+    let counters = &mut state.counters;
+
     match event {
         Event::Login => {
-            bot.chat(format!("/reg {}", state.config.bot.password).as_str());
-            bot.chat(format!("/login {}", state.config.bot.password).as_str());
+            bot.chat(format!("/reg {password}").as_str());
+            bot.chat(format!("/login {password}").as_str());
         }
 
         Event::Spawn => {
-            state.counters.spawn += 1;
-            println!("spawn {}", state.counters.spawn);
+            counters.spawn += 1;
+            println!("spawn {}", counters.spawn);
         }
 
         Event::Chat(msg) => {
+            match msg.clone() {
+                ChatPacket::System(msg) => {
+                    println!("system {}", msg.content.to_ansi());
+                }
+                ChatPacket::Player(msg) => {
+                    println!("player {}", msg.message().to_ansi());
+                }
+                ChatPacket::Disguised(msg) => {
+                    println!("disguised {}", msg.message().to_ansi());
+                }
+            }
+
             let text = msg.content();
             if msg.sender() == Some(bot.username()) {
                 // return Ok(());
             }
             if text.contains(JOIN_PORTAL_MSG1) || text.contains(JOIN_PORTAL_MSG2) {
-                let cmd = format!("/{}", state.config.bot.portal);
-                bot.chat(cmd.as_str());
+                bot.send_command_packet(&portal);
             }
 
-            println!("{}", msg.message().to_ansi());
+            // println!("{}", msg.message().to_ansi());
         }
 
         Event::Disconnect(reason) => {
             // Auto rejoin
             let text = reason.unwrap_or_default().to_ansi();
-            log!(INFO, "[{}] Disconnected: {}", state.config.bot.portal, text);
+            log!(INFO, "[{}] Disconnected: {}", portal, text);
         }
 
-        _ => {}
+        Event::Packet(packet) => match packet.as_ref() {
+            ClientboundGamePacket::SetPlayerTeam(team) => {
+
+            }
+
+            ClientboundGamePacket::AddEntity(entity) => {
+
+            }
+
+            _ => {}
+        }
+
+        _ => println!("{event:?}"),
     }
 
     Ok(())
 }
+
 /* 
 TODO --------------------------------------------------------------
 Event::Packet(packet) => {}
@@ -68,3 +101,4 @@ v .db postgresql
 /warp n930iqkfujo2
 TODO --------------------------------------------------------------
 */
+

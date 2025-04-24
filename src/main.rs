@@ -6,13 +6,15 @@ use std::env;
 use std::net::SocketAddr;
 use std::path::Path;
 use types::*;
-use azalea::prelude::*;
+use deadlock::deadlock_detection;
 use azalea::JoinOpts;
+use azalea::prelude::*;
 use azalea::protocol::connect::Proxy;
 use azalea_viaversion::ViaVersionPlugin;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    deadlock_detection();
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
@@ -26,11 +28,14 @@ async fn main() -> Result<()> {
     let host = server_config
         .host
         .ok_or_else(|| anyhow!("Server host is missing in config"))?;
-    let port = server_config.port.unwrap_or(25565);
-    let address = format!("{host}:{port}");
+
+    let address = if let Some(port) = server_config.port {
+        format!("{host}:{port}")
+    } else {
+        host
+    };
 
     let account = Account::offline(&runtime_config.bot.nickname);
-
     let options = if let (Some(proxy_host), Some(proxy_port)) =
         (proxy_config.host.as_deref(), proxy_config.port)
     {
@@ -52,7 +57,6 @@ async fn main() -> Result<()> {
 
     let version = server_config.version.unwrap_or_else(|| "AUTO".to_string());
 
-    // Создаем начальное состояние с runtime_config
     let initial_state = State {
         config: runtime_config,
         counters: Counters { 
@@ -65,13 +69,9 @@ async fn main() -> Result<()> {
         let via_version_plugin = ViaVersionPlugin::start(version).await;
         client_builder = client_builder.add_plugins(via_version_plugin);
     }
-
-    // Теперь `handle` должен соответствовать типу State
-    // Сигнатура handle: async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()>
     client_builder
         .set_handler(handle)
         .set_state(initial_state)
         .start_with_opts(account, address, options)
-        .await
-        .map_err(|e| anyhow!("Error starting or running client: {:?}", e))?
+        .await?;
 }

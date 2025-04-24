@@ -13,3 +13,4 @@ pub mod handler;
 pub mod re;
 pub mod types;
 pub mod consts;
+pub mod deadlock;
