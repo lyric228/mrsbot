@@ -54,6 +54,7 @@ pub struct BotConfigResolved {
     pub nickname: String,
     pub password: String,
     pub warp: String,
+    pub portal: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -70,32 +71,52 @@ pub struct DelayValues {
 }
 
 impl Config {
-    pub fn resolve(&self) -> Result<RuntimeConfig> {
+    pub fn resolve(&self, portal_name: &str) -> Result<RuntimeConfig> {
         let bot = self.bot.as_ref().ok_or_else(|| anyhow!("Bot config is missing"))?;
         let nickname = bot.nickname.as_ref().ok_or_else(|| anyhow!("Bot nickname is missing"))?.clone();
         let password = bot.password.as_ref().ok_or_else(|| anyhow!("Bot password is missing"))?.clone();
         let warp = bot.warp.as_ref().ok_or_else(|| anyhow!("Bot warp is missing"))?.clone();
+        // --- Updated delay resolution logic ---
+        let delay_config = self.delay.as_ref().ok_or_else(|| anyhow!("Delay config is missing"))?;
 
-        let delay = self.delay.as_ref().ok_or_else(|| anyhow!("Delay config is missing"))?;
-        let min_delay = delay.min.as_ref().unwrap_or_else(|| delay.max.as_ref().unwrap_or_else(|| {
-            panic!("Either min or max delay should be present")
-        }));
-        let max_delay = delay.max.as_ref().unwrap_or(min_delay);
+        let resolved_min_delay_opt = delay_config.min.as_ref();
+        let resolved_max_delay_opt = delay_config.max.as_ref();
 
+        // Return an error if neither min nor max is defined in the merged config
+        if resolved_min_delay_opt.is_none() && resolved_max_delay_opt.is_none() {
+            return Err(anyhow!("Delay configuration requires at least 'min' or 'max' section to be specified after merging configs."));
+        }
+
+        // Use max if min is missing, otherwise use min. This determines the values for 'min' delays.
+        let final_min_delay_config = resolved_min_delay_opt.or(resolved_max_delay_opt)
+            .ok_or_else(|| anyhow!("Internal error resolving effective min_delay config"))?;
+
+        // Use min if max is missing, otherwise use max. This determines the values for 'max' delays.
+        let final_max_delay_config = resolved_max_delay_opt.or(resolved_min_delay_opt)
+            .ok_or_else(|| anyhow!("Internal error resolving effective max_delay config"))?;
+
+        // Extract the specific delay values, ensuring they are present within the selected min/max config sections.
         let min = DelayValues {
-            global: min_delay.global.ok_or_else(|| anyhow!("Min global delay is missing"))?,
-            discord: min_delay.discord.ok_or_else(|| anyhow!("Min discord delay is missing"))?,
-            invite: min_delay.invite.ok_or_else(|| anyhow!("Min invite delay is missing"))?,
+            global: final_min_delay_config.global.ok_or_else(|| anyhow!("Min global delay value is missing"))?,
+            discord: final_min_delay_config.discord.ok_or_else(|| anyhow!("Min discord delay value is missing"))?,
+            invite: final_min_delay_config.invite.ok_or_else(|| anyhow!("Min invite delay value is missing"))?,
         };
 
         let max = DelayValues {
-            global: max_delay.global.ok_or_else(|| anyhow!("Max global delay is missing"))?,
-            discord: max_delay.discord.ok_or_else(|| anyhow!("Max discord delay is missing"))?,
-            invite: max_delay.invite.ok_or_else(|| anyhow!("Max invite delay is missing"))?,
+            global: final_max_delay_config.global.ok_or_else(|| anyhow!("Max global delay value is missing"))?,
+            discord: final_max_delay_config.discord.ok_or_else(|| anyhow!("Max discord delay value is missing"))?,
+            invite: final_max_delay_config.invite.ok_or_else(|| anyhow!("Max invite delay value is missing"))?,
         };
+        // --- End of updated delay resolution logic ---
+
 
         Ok(RuntimeConfig {
-            bot: BotConfigResolved { nickname, password, warp },
+            bot: BotConfigResolved {
+                nickname,
+                password,
+                warp,
+                portal: portal_name.to_string(),
+            },
             delay: DelayResolved { min, max },
         })
     }
@@ -113,8 +134,23 @@ fn load_toml_config(path: &Path) -> Result<Config> {
 }
 
 pub fn load_cfg(portal_path: &Path) -> Result<(Config, RuntimeConfig, ServerConfig, ProxyConfig)> {
-    let server_path = portal_path.parent().unwrap().join("all.toml");
-    let default_path = portal_path.parent().unwrap().parent().unwrap().join("default.toml");
+    let portal_name = portal_path.file_stem()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Could not extract portal name from path: {}", portal_path.display()))?;
+
+    let portal_dir = portal_path.parent()
+        .ok_or_else(|| anyhow!("Invalid portal path (no parent directory): {}", portal_path.display()))?;
+    let server_dir = portal_dir.parent()
+        .ok_or_else(|| anyhow!("Could not find server directory (parent of portal dir): {}", portal_dir.display()))?;
+    let server_path = portal_dir.join("all.toml");
+    let default_path = server_dir.join("default.toml");
+
+
+    println!("Loading default config from: {}", default_path.display());
+    println!("Loading server config from: {}", server_path.display());
+    println!("Loading portal config from: {} (Portal Name: {})", portal_path.display(), portal_name);
+
 
     let default_config = load_toml_config(&default_path)?;
     let server_config = load_toml_config(&server_path)?;
@@ -122,7 +158,7 @@ pub fn load_cfg(portal_path: &Path) -> Result<(Config, RuntimeConfig, ServerConf
 
     let merged_config = merge_configs(&default_config, &server_config, &portal_config);
 
-    let runtime_config = merged_config.resolve()
+    let runtime_config = merged_config.resolve(&portal_name)
         .context("Failed to resolve merged configuration")?;
 
     let server_config_to_return = merged_config.server.clone()

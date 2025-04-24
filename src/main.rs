@@ -5,7 +5,7 @@ use handler::handle;
 use std::env;
 use std::net::SocketAddr;
 use std::path::Path;
-use types::State;
+use types::*;
 use azalea::prelude::*;
 use azalea::JoinOpts;
 use azalea::protocol::connect::Proxy;
@@ -54,7 +54,10 @@ async fn main() -> Result<()> {
 
     // Создаем начальное состояние с runtime_config
     let initial_state = State {
-        runtime_config
+        config: runtime_config,
+        counters: Counters { 
+            spawn: 0
+        },
     };
     let mut client_builder = ClientBuilder::new();
 
@@ -67,7 +70,7 @@ async fn main() -> Result<()> {
     // Сигнатура handle: async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()>
     client_builder
         .set_handler(handle)
-        .set_state(initial_state) // Передаем handle напрямую
+        .set_state(initial_state)
         .start_with_opts(account, address, options)
         .await
         .map_err(|e| anyhow!("Error starting or running client: {:?}", e))?

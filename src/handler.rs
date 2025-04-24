@@ -1,24 +1,44 @@
+use crate::types::*;
 use azalea::prelude::*;
-use crate::types::State;
+use sysx::io::log::*;
+use crate::consts::*;
 
-pub async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()> {
+pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Result<()> {
     match event {
+        Event::Login => {
+            bot.chat(format!("/reg {}", state.config.bot.password).as_str());
+            bot.chat(format!("/login {}", state.config.bot.password).as_str());
+        }
+
         Event::Spawn => {
-            bot.chat(format!("/reg {}", state.runtime_config.bot.password).as_str());
-            bot.chat(format!("/login {}", state.runtime_config.bot.password).as_str());
-            bot.chat(format!("/s{}", state.runtime_config.bot.password).as_str());
+            state.counters.spawn += 1;
+            println!("spawn {}", state.counters.spawn);
         }
 
         Event::Chat(msg) => {
+            let text = msg.content();
             if msg.sender() == Some(bot.username()) {
                 // return Ok(());
+            }
+            if text.contains(JOIN_PORTAL_MSG1) || text.contains(JOIN_PORTAL_MSG2) {
+                let cmd = format!("/{}", state.config.bot.portal);
+                bot.chat(cmd.as_str());
             }
 
             println!("{}", msg.message().to_ansi());
         }
 
-        Event::Disconnect(text) => {
-            
+        Event::Disconnect(reason) => {
+            // Auto rejoin
+            let text = reason.unwrap_or_default().to_ansi();
+            log!(INFO, "[{}] Disconnected: {}", state.config.bot.portal, text);
+        }
+
+        Event::Packet(packet) => match packet {
+            // Тут можно обрабатывать любые события и пакеты
+            // mb *packet
+
+            _ => {}
         }
 
         _ => {}
