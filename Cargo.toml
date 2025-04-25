@@ -11,7 +11,7 @@ lazy_static = "1.5.0"
 sysx = { git = "https://github.com/lyric228/sysx" }
 azalea = { git = "https://github.com/azalea-rs/azalea" }
 azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion" }
-bevy_ecs = "0.15.3"
+bevy_ecs = "0.16.0"
 
 [dependencies.serde]
 version = "1.0.219"

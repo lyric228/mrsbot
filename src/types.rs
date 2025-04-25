@@ -1,4 +1,4 @@
-use crate::cfg::RuntimeConfig;
+use crate::config::RuntimeConfig;
 use azalea::ecs::component::Component;
 
 #[derive(Default, Clone, Component)]

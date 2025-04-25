@@ -1,8 +1,8 @@
 use crate::types::*;
-use azalea::{prelude::*, protocol::packets::game::ServerboundGamePacket};
 use sysx::io::log::*;
+use azalea::inventory::Inventory;
+use azalea::prelude::*;
 use azalea::protocol::packets::game::ClientboundGamePacket;
-use azalea::chat::ChatPacket;
 use crate::consts::*;
 
 pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Result<()> {
@@ -25,19 +25,8 @@ pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Resu
         }
 
         Event::Chat(msg) => {
-            match msg.clone() {
-                ChatPacket::System(msg) => {
-                    println!("system {}", msg.content.to_ansi());
-                }
-                ChatPacket::Player(msg) => {
-                    println!("player {}", msg.message().to_ansi());
-                }
-                ChatPacket::Disguised(msg) => {
-                    println!("disguised {}", msg.message().to_ansi());
-                }
-            }
-
             let text = msg.content();
+
             if msg.sender() == Some(bot.username()) {
                 // return Ok(());
             }
@@ -45,7 +34,7 @@ pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Resu
                 bot.send_command_packet(&portal);
             }
 
-            // println!("{}", msg.message().to_ansi());
+            println!("{}", msg.message().to_ansi());
         }
 
         Event::Disconnect(reason) => {
@@ -55,18 +44,12 @@ pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Resu
         }
 
         Event::Packet(packet) => match packet.as_ref() {
-            ClientboundGamePacket::SetPlayerTeam(team) => {
-
-            }
-
-            ClientboundGamePacket::AddEntity(entity) => {
-
-            }
+            
 
             _ => {}
         }
 
-        _ => println!("{event:?}"),
+        _ => {}
     }
 
     Ok(())

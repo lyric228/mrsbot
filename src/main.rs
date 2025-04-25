@@ -1,6 +1,6 @@
 use mrsbot::*;
 use anyhow::{anyhow, Result};
-use cfg::load_cfg;
+use config::load_cfg;
 use handler::handle;
 use std::env;
 use std::net::SocketAddr;
@@ -69,9 +69,10 @@ async fn main() -> Result<()> {
         let via_version_plugin = ViaVersionPlugin::start(version).await;
         client_builder = client_builder.add_plugins(via_version_plugin);
     }
+
     client_builder
         .set_handler(handle)
         .set_state(initial_state)
         .start_with_opts(account, address, options)
-        .await?;
+        .await?
 }

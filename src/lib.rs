@@ -8,7 +8,7 @@ pub mod handlers {
     pub mod spawn;
     pub mod time;
 }
-pub mod cfg;
+pub mod config;
 pub mod handler;
 pub mod re;
 pub mod types;
