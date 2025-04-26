@@ -1,54 +1,19 @@
-use crate::types::*;
-use sysx::io::log::*;
-use azalea::inventory::Inventory;
+use crate::events::chat::parser::chat_parser;
+use crate::events::init::init_handler;
+use crate::events::login::login_handler;
+use crate::events::packet::parser::packet_parser;
+use crate::{events::spawn::spawn_handler, types::*};
 use azalea::prelude::*;
-use azalea::protocol::packets::game::ClientboundGamePacket;
-use crate::consts::*;
+use crate::events::disconnect::disconnect_handler;
 
-pub async fn handle(bot: Client, event: Event, mut state: State) -> anyhow::Result<()> {
-    let nickname = state.config.bot.nickname.clone();
-    let password = state.config.bot.password.clone();
-    let portal = state.config.bot.portal.clone();
-    let warp = state.config.bot.warp.clone();
-    let delay = state.config.delay.clone();
-    let counters = &mut state.counters;
-
+pub async fn handle(bot: Client, event: Event, state: State) -> anyhow::Result<()> {
     match event {
-        Event::Login => {
-            bot.chat(format!("/reg {password}").as_str());
-            bot.chat(format!("/login {password}").as_str());
-        }
-
-        Event::Spawn => {
-            counters.spawn += 1;
-            println!("spawn {}", counters.spawn);
-        }
-
-        Event::Chat(msg) => {
-            let text = msg.content();
-
-            if msg.sender() == Some(bot.username()) {
-                // return Ok(());
-            }
-            if text.contains(JOIN_PORTAL_MSG1) || text.contains(JOIN_PORTAL_MSG2) {
-                bot.send_command_packet(&portal);
-            }
-
-            println!("{}", msg.message().to_ansi());
-        }
-
-        Event::Disconnect(reason) => {
-            // Auto rejoin
-            let text = reason.unwrap_or_default().to_ansi();
-            log!(INFO, "[{}] Disconnected: {}", portal, text);
-        }
-
-        Event::Packet(packet) => match packet.as_ref() {
-            
-
-            _ => {}
-        }
-
+        Event::Init => init_handler(state),
+        Event::Login => login_handler(bot, state),
+        Event::Spawn => spawn_handler(state),
+        Event::Chat(msg) => chat_parser(bot, state, msg),
+        Event::Disconnect(reason) => disconnect_handler(state, reason),
+        Event::Packet(packet) => packet_parser(bot, state, packet),
         _ => {}
     }
 

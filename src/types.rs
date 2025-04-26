@@ -1,15 +1,21 @@
 use crate::config::RuntimeConfig;
-use azalea::ecs::component::Component;
+use azalea::{ecs::component::Component, Vec3};
 
 #[derive(Default, Clone, Component)]
 pub struct State {
     pub config: RuntimeConfig,
     pub counters: Counters,
-    // Здесь можно добавить другие поля состояния, если они понадобятся
+    pub flags: Flags,
+    pub prev_pos: Vec3,
 }
 
 #[derive(Default, Clone)]
 pub struct Counters {
     pub spawn: i32, 
-    // Добавьте сюда другие счетчики по мере необходимости
+}
+
+#[derive(Default, Clone)]
+pub struct Flags {
+    pub init: bool,
+    pub login: bool,
 }

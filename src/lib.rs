@@ -1,16 +1,29 @@
-pub mod handlers {
-    pub mod chat {
-        pub mod cc;
-        pub mod gc;
-        pub mod lc;
-        pub mod pm;
-    }
-    pub mod spawn;
-    pub mod time;
-}
 pub mod config;
+pub mod consts;
+pub mod deadlock;
 pub mod handler;
 pub mod re;
 pub mod types;
-pub mod consts;
-pub mod deadlock;
+
+pub mod events {
+    pub mod disconnect;
+    pub mod init;
+    pub mod login;
+    pub mod spawn;
+    pub mod tick;
+
+    pub mod packet {
+        pub mod any;
+        pub mod parser;
+    }
+
+    pub mod chat {
+        pub mod any;
+        pub mod clan;
+        pub mod global;
+        pub mod local;
+        pub mod parser;
+        pub mod personal;
+        pub mod unknown;
+    }
+}

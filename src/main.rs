@@ -1,3 +1,4 @@
+use azalea::Vec3;
 use mrsbot::*;
 use anyhow::{anyhow, Result};
 use config::load_cfg;
@@ -59,13 +60,14 @@ async fn main() -> Result<()> {
 
     let initial_state = State {
         config: runtime_config,
+        prev_pos: Vec3::ZERO,
         counters: Counters { 
-            spawn: 0
+            spawn: 0,
         },
     };
     let mut client_builder = ClientBuilder::new();
 
-    if version != "AUTO" {
+    if version.as_str() != "AUTO" {
         let via_version_plugin = ViaVersionPlugin::start(version).await;
         client_builder = client_builder.add_plugins(via_version_plugin);
     }
